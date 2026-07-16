@@ -1,6 +1,28 @@
 # Rebuild study sa-m.fr (versione Andrea Lando)
 
+## COME CREARE UN NUOVO CRUCIVERBA (per un'altra persona)
 
+Tutto cio che cambia da persona a persona sta in **`puzzle.js`**: e l'unico file da aprire.
+
+1. Apri `puzzle.js`.
+2. Cambia `title` (nome nella scheda del browser).
+3. Riscrivi la lista `clues`: per ogni voce `{ number, clue, answer }` — la domanda e la
+   risposta. Le risposte sono una sola parola (gli spazi e gli accenti vengono tolti, tutto
+   maiuscolo in automatico). Le risposte devono **condividere qualche lettera** tra loro,
+   altrimenti non possono incrociarsi.
+4. (Di rado) aggiorna `contact` se cambiano i tuoi recapiti.
+5. Ricarica la pagina: i due layout della griglia (mobile/portrait e desktop/landscape) e il
+   footer con gli indizi si **rigenerano da soli**. Nessun comando, nessun copia-incolla.
+
+Anteprima/diagnostica: apri in locale con `?dev` (es. `index.html?dev`) o da `localhost`. In
+console vedrai `Layout portrait: OK` / `Layout landscape: OK`. Se le parole non si incrociano,
+la pagina mostra un avviso invece di rompersi: aggiusta le risposte e ricarica.
+
+File del progetto:
+- `puzzle.js` — dati della persona (l'unico da modificare).
+- `generator.js` — genera e valida i due layout dalle risposte (algoritmo unico, deterministico).
+- `script.js` — disegna griglia + footer, gestisce input e reveal.
+- `index.html` / `style.css` — struttura e stile.
 
 \---
 
