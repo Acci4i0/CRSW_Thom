@@ -24,6 +24,13 @@ function normalizeClue(clue) {
 
 const RELOAD_AFTER_COMPLETION_MS = 30000;
 
+const MIN_FOOTER_SCALE = 0.9;
+
+// Una chiave per sito: tutti i cruciverba della serie stanno sullo stesso
+// dominio (acci4i0.github.io) e quindi condividono lo stesso localStorage.
+const AVATAR_STORAGE_KEY = `crsw-avatar:${location.pathname}`;
+const AVATAR_FADE_MS = 200; // come il fade degli indizi in style.css
+
 const PORTRAIT_BREAKPOINT = window.matchMedia("(max-width: 820px)");
 
 const grid = document.getElementById("grid");
@@ -37,6 +44,9 @@ main();
 function main() {
   document.title = PUZZLE.title;
   renderFooter();
+  fitFooterText();
+  window.addEventListener("resize", fitFooterText);
+  renderAvatar(PUZZLE.avatars || []);
 
   if (!LAYOUTS.portrait || !LAYOUTS.landscape) {
     reportGenerationFailure();
@@ -76,6 +86,7 @@ function renderFooter() {
 // colonne partono allineate.
 function infoColumn(clues, label) {
   const div = document.createElement("div");
+  div.className = "info";
   const ul = document.createElement("ul");
   if (label) ul.appendChild(listItem("head-list", label));
   ul.appendChild(listItem("spacer", clues.length ? `${clues[0].number}.` : ""));
@@ -115,6 +126,36 @@ function contactBlock(contact) {
   return div;
 }
 
+// Ogni voce del footer dovrebbe stare su una riga. Sui telefoni stretti una
+// mail o un indizio lunghi non ci stanno: allora va a capo solo la colonna di
+// indizi piu' larga (le altre voci e i contatti restano su una riga) e il
+// testo si riduce un poco, mai sotto MIN_FOOTER_SCALE.
+function fitFooterText() {
+  const footer = document.getElementById("footer");
+  footer.style.fontSize = "";
+  letWidestInfoColumnWrap(footer);
+  const baseSize = parseFloat(getComputedStyle(footer).fontSize);
+  let scale = 1;
+  while (footerWraps(footer) && scale > MIN_FOOTER_SCALE) {
+    scale = Math.max(MIN_FOOTER_SCALE, scale - 0.02);
+    footer.style.fontSize = `${baseSize * scale}px`;
+  }
+}
+
+// Misura le colonne quando nessuna puo' restringersi (larghezza naturale).
+function letWidestInfoColumnWrap(footer) {
+  const infoColumns = [...footer.querySelectorAll(".info")];
+  infoColumns.forEach((column) => column.classList.remove("can-wrap"));
+  const widest = infoColumns.reduce((a, b) => (b.offsetWidth > a.offsetWidth ? b : a));
+  widest.classList.add("can-wrap");
+}
+
+// Lo spacer ("1.") e' sempre una riga sola: fa da metro per l'altezza di riga.
+function footerWraps(footer) {
+  const lineHeight = footer.querySelector(".spacer").offsetHeight;
+  return [...footer.querySelectorAll("li")].some((item) => item.offsetHeight > lineHeight * 1.5);
+}
+
 function listItem(className, text) {
   const item = document.createElement("li");
   if (className) item.className = className;
@@ -134,6 +175,121 @@ function linkItem(href, text, external) {
   item.appendChild(link);
   return item;
 }
+
+// ---- Avatar in alto a sinistra (facoltativo: PUZZLE.avatars) ----
+
+// Ogni voce di PUZZLE.avatars e' il percorso di un'immagine oppure
+// { sprite, frames, frameMs } per un'animazione a sprite sheet. Con piu' di
+// una voce compaiono le frecce; la scelta resta salvata nel browser.
+function renderAvatar(avatars) {
+  if (avatars.length === 0) return;
+
+  const slot = document.createElement("div");
+  slot.className = "avatar-slot";
+  let current = savedAvatarIndex(avatars.length);
+  slot.appendChild(avatarElement(avatars[current]));
+
+  const container = document.createElement("div");
+  container.className = "avatar";
+  container.appendChild(slot);
+
+  if (avatars.length > 1) {
+    container.appendChild(
+      avatarArrows((step) => {
+        current = (current + step + avatars.length) % avatars.length;
+        saveAvatarIndex(current);
+        swapAvatar(slot, avatarElement(avatars[current]));
+      })
+    );
+    preloadImages(avatars.filter((avatar) => typeof avatar === "string"));
+  }
+
+  document.body.appendChild(container);
+}
+
+function avatarElement(avatar) {
+  return typeof avatar === "string" ? avatarImage(avatar) : avatarSprite(avatar);
+}
+
+function avatarImage(src) {
+  const image = document.createElement("img");
+  image.className = "avatar-image";
+  image.src = src;
+  image.alt = "";
+  image.draggable = false;
+  return image;
+}
+
+// steps() non accetta variabili CSS in modo affidabile: l'animazione si
+// imposta qui, con il numero di frame e la durata presi da puzzle.js.
+function avatarSprite({ sprite, frames, frameMs }) {
+  const element = document.createElement("div");
+  element.className = "walk";
+  element.style.setProperty("--walk-frames", frames);
+  element.style.backgroundImage = `url(${sprite})`;
+  element.style.animation = `walk ${frames * frameMs}ms steps(${frames}) infinite`;
+  return element;
+}
+
+function avatarArrows(onStep) {
+  const arrows = document.createElement("div");
+  arrows.className = "avatar-arrows";
+  arrows.append(
+    arrowButton("←", "Avatar precedente", () => onStep(-1)),
+    arrowButton("→", "Avatar successivo", () => onStep(1))
+  );
+  return arrows;
+}
+
+function arrowButton(symbol, label, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = symbol;
+  button.setAttribute("aria-label", label);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+// Dissolvenza: l'avatar sfuma, viene sostituito e ricompare.
+let avatarSwapTimer = null;
+
+function swapAvatar(slot, element) {
+  clearTimeout(avatarSwapTimer);
+  slot.classList.add("is-changing");
+  avatarSwapTimer = setTimeout(() => {
+    slot.replaceChildren(element);
+    slot.classList.remove("is-changing");
+  }, AVATAR_FADE_MS);
+}
+
+// Le altre immagini si scaricano dopo il load, cosi' il cambio e' immediato
+// senza rallentare la prima apertura.
+function preloadImages(sources) {
+  window.addEventListener("load", () => {
+    for (const src of sources) new Image().src = src;
+  });
+}
+
+// localStorage puo' mancare (navigazione privata, dati bloccati): in quel
+// caso si parte dal primo avatar e la scelta vale solo per questa visita.
+function savedAvatarIndex(count) {
+  try {
+    const index = Number(localStorage.getItem(AVATAR_STORAGE_KEY));
+    return Number.isInteger(index) && index >= 0 && index < count ? index : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveAvatarIndex(index) {
+  try {
+    localStorage.setItem(AVATAR_STORAGE_KEY, String(index));
+  } catch {
+    // Nessuno storage disponibile: niente da salvare.
+  }
+}
+
+// ---- Layout ----
 
 function selectLayout() {
   return PORTRAIT_BREAKPOINT.matches ? LAYOUTS.portrait : LAYOUTS.landscape;
