@@ -26,6 +26,9 @@ const RELOAD_AFTER_COMPLETION_MS = 30000;
 
 const MIN_FOOTER_SCALE = 0.9;
 
+// Distanza minima fra l'avatar e la griglia.
+const AVATAR_CLEARANCE_PX = 12;
+
 const PORTRAIT_BREAKPOINT = window.matchMedia("(max-width: 820px)");
 
 const grid = document.getElementById("grid");
@@ -42,6 +45,7 @@ function main() {
   fitFooterText();
   window.addEventListener("resize", fitFooterText);
   if (PUZZLE.avatar) renderAvatar(PUZZLE.avatar);
+  window.addEventListener("resize", keepGridClearOfAvatar);
 
   if (!LAYOUTS.portrait || !LAYOUTS.landscape) {
     reportGenerationFailure();
@@ -189,7 +193,32 @@ function avatarImage(src) {
   image.src = src;
   image.alt = "";
   image.draggable = false;
+  // Prima del load l'immagine non ha ancora larghezza: si ricontrolla dopo.
+  image.addEventListener("load", keepGridClearOfAvatar);
   return image;
+}
+
+// L'avatar e' fisso in alto a sinistra e la griglia, centrata, occupa piu'
+// spazio possibile: su una finestra bassa e larga finirebbe sotto l'avatar.
+// Solo in quel caso si riserva in alto lo spazio dell'avatar: la griglia
+// scende e si rimpicciolisce quanto basta (--avatar-reserve in style.css).
+function keepGridClearOfAvatar() {
+  const avatar = document.querySelector(".avatar");
+  if (!avatar) return;
+  const area = grid.parentElement;
+  area.style.setProperty("--avatar-reserve", "0px");
+  const avatarBox = avatar.getBoundingClientRect();
+  if (!gridOverlaps(avatarBox)) return;
+  area.style.setProperty("--avatar-reserve", `${avatarBox.bottom + AVATAR_CLEARANCE_PX}px`);
+}
+
+function gridOverlaps(box) {
+  const gap = AVATAR_CLEARANCE_PX;
+  return [...grid.children].some((cell) => {
+    const r = cell.getBoundingClientRect();
+    return r.left < box.right + gap && r.right > box.left - gap
+      && r.top < box.bottom + gap && r.bottom > box.top - gap;
+  });
 }
 
 // steps() non accetta variabili CSS in modo affidabile: l'animazione si
@@ -212,6 +241,7 @@ function selectLayout() {
 function applyLayout(layout) {
   renderGrid(layout);
   for (const number of solvedNumbers) revealClue(number);
+  keepGridClearOfAvatar();
 }
 
 // Tutte le lettere sono pre-scritte ma nascoste; la prima cella di ogni

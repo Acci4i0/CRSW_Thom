@@ -18,14 +18,20 @@ body {
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  padding: 0 4vh 16vh; /* il padding inferiore riserva lo spazio del footer fisso */
+  /* il padding inferiore riserva lo spazio del footer fisso; quello superiore
+     vale 0 finche' la griglia non finirebbe sotto l'avatar (vedi
+     keepGridClearOfAvatar in script.js) */
+  padding: var(--avatar-reserve, 0px) 4vh 16vh;
 }
 
 .grid {
   /* La larghezza detta la dimensione delle celle come nell'originale;
      il limite in altezza evita che la griglia raggiunga INFO/CONTACT
      sulle finestre basse. */
-  --cell-size: min(calc((100vw - 8vh) / var(--cols)), calc(80vh / var(--rows)));
+  --cell-size: min(
+    calc((100vw - 8vh) / var(--cols)),
+    calc((80vh - var(--avatar-reserve, 0px)) / var(--rows))
+  );
   display: grid;
   grid-template-columns: repeat(var(--cols), var(--cell-size));
   grid-template-rows: repeat(var(--rows), var(--cell-size));
@@ -138,11 +144,14 @@ a {
 @media (max-width: 820px) {
   .grid {
     /* gutter laterale come l'originale: la griglia non tocca i bordi schermo */
-    --cell-size: min(calc((100vw - 16vw) / var(--cols)), calc(80vh / var(--rows)));
+    --cell-size: min(
+      calc((100vw - 16vw) / var(--cols)),
+      calc((80vh - var(--avatar-reserve, 0px)) / var(--rows))
+    );
   }
 
   .grid-area {
-    padding: 0 8vw 16vh;
+    padding: var(--avatar-reserve, 0px) 8vw 16vh;
   }
 
   .square .content {
