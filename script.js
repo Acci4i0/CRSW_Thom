@@ -29,6 +29,11 @@ const MIN_FOOTER_SCALE = 0.9;
 // Distanza minima fra l'avatar e la griglia.
 const AVATAR_CLEARANCE_PX = 12;
 
+// Lo show dell'avatar quando lo si tocca (vedi playAvatarShow).
+const AVATAR_SHOW_MS = 4600;
+const AVATAR_WIGGLE_MS = 700;
+let avatarShow = null; // l'animazione in corso, se c'e'
+
 const PORTRAIT_BREAKPOINT = window.matchMedia("(max-width: 820px)");
 
 const grid = document.getElementById("grid");
@@ -179,12 +184,15 @@ function linkItem(href, text, external) {
 
 // PUZZLE.avatar e' il percorso di un'immagine oppure { sprite, frames,
 // frameMs } per un'animazione a sprite sheet (es. la camminata).
+// Toccandolo l'avatar prende vita: vedi playAvatarShow().
 function renderAvatar(avatar) {
-  const container = document.createElement("div");
-  container.className = "avatar";
-  container.setAttribute("aria-hidden", "true"); // decorativo
-  container.appendChild(typeof avatar === "string" ? avatarImage(avatar) : avatarSprite(avatar));
-  document.body.appendChild(container);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "avatar";
+  button.setAttribute("aria-label", "Fai muovere l'avatar");
+  button.appendChild(typeof avatar === "string" ? avatarImage(avatar) : avatarSprite(avatar));
+  button.addEventListener("click", () => playAvatarShow(button));
+  document.body.appendChild(button);
 }
 
 function avatarImage(src) {
@@ -204,7 +212,9 @@ function avatarImage(src) {
 // style.css).
 function keepGridClearOfAvatar() {
   const avatar = document.querySelector(".avatar");
-  if (!avatar) return;
+  // Durante lo show la posizione e' alterata dalla trasformazione: si
+  // ricontrolla quando l'avatar e' tornato al suo posto.
+  if (!avatar || avatarShow) return;
   const area = grid.parentElement;
   area.style.setProperty("--avatar-reserve", "0px");
   const avatarBox = avatar.getBoundingClientRect();
@@ -230,6 +240,131 @@ function avatarSprite({ sprite, frames, frameMs }) {
   element.style.backgroundImage = `url(${sprite})`;
   element.style.animation = `walk ${frames * frameMs}ms steps(${frames}) infinite`;
   return element;
+}
+
+// ---- L'avatar prende vita ----
+
+// Al tocco l'avatar si stacca dall'angolo e, a saltelli goffi, va al centro
+// dello schermo ingrandendosi; li' improvvisa (un gran salto, rimbalzi a
+// destra e a sinistra, barcolla, si gira a mezz'aria) e poi torna piano piano
+// al suo posto. Tutto con trasformazioni (Web Animations API, come il
+// preloader): niente cambia nel layout della pagina.
+function playAvatarShow(avatar) {
+  if (avatarShow) return;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  avatarShow = reduceMotion
+    ? avatar.animate(wiggleKeyframes(), { duration: AVATAR_WIGGLE_MS })
+    : avatar.animate(clumsyShowKeyframes(avatar.getBoundingClientRect()), { duration: AVATAR_SHOW_MS });
+  avatar.classList.add("is-alive");
+  avatarShow.onfinish = () => {
+    avatarShow = null;
+    avatar.classList.remove("is-alive");
+    keepGridClearOfAvatar();
+  };
+}
+
+// Chi ha chiesto meno movimento vede solo una piccola oscillazione sul posto.
+function wiggleKeyframes() {
+  return [0, -8, 7, -4, 0].map((degrees) => ({ transform: `rotate(${degrees}deg)` }));
+}
+
+// Coordinate in pixel rispetto alla posizione di riposo; la trasformazione
+// parte dal centro della base (transform-origin in style.css), cosi' gli
+// schiacciamenti sembrano appoggiati a terra.
+function clumsyShowKeyframes(box) {
+  const size = box.height;
+  const bigScale = Math.min(3.5, Math.max(2.5, (Math.min(innerWidth, innerHeight) * 0.3) / size));
+  // la base dell'avatar ingrandito va sotto il centro dello schermo, cosi'
+  // la figura risulta centrata
+  const center = {
+    x: innerWidth / 2 - (box.left + box.width / 2),
+    y: innerHeight / 2 + (size * bigScale) / 2 - box.bottom,
+  };
+  const hop = size * bigScale * 0.35;
+  const step = size * bigScale * 0.8;
+  const rest = { x: 0, y: 0 };
+
+  return [
+    pose(0, rest, { scale: 1 }),
+    pose(0.03, rest, { scale: 1, squash: 0.2, easing: "ease-out" }), // si prepara
+    ...hopsBetween(rest, center, 1, bigScale, { from: 0.03, to: 0.25, count: 3, height: hop * 0.8 }),
+
+    // al centro: si raddrizza, si accuccia e fa un gran salto
+    pose(0.27, center, { scale: bigScale, squash: -0.05 }),
+    pose(0.3, center, { scale: bigScale, squash: 0.22, easing: "ease-out" }),
+    pose(0.36, at(center, 0, -hop * 2.2), { scale: bigScale, squash: -0.12, rotate: -6, easing: "ease-in" }),
+    pose(0.41, center, { scale: bigScale, squash: 0.25, easing: "ease-out" }),
+    pose(0.44, center, { scale: bigScale }),
+
+    // rimbalza a sinistra, poi a destra inclinandosi in modo goffo
+    pose(0.47, at(center, -step / 2, -hop), { scale: bigScale, rotate: -10, easing: "ease-in" }),
+    pose(0.5, at(center, -step, 0), { scale: bigScale, squash: 0.18, rotate: -12, easing: "ease-out" }),
+    pose(0.54, at(center, 0, -hop * 1.2), { scale: bigScale, rotate: 8, easing: "ease-in" }),
+    pose(0.58, at(center, step, 0), { scale: bigScale, squash: 0.18, rotate: 14, easing: "ease-out" }),
+
+    // barcolla come se perdesse l'equilibrio
+    pose(0.61, at(center, step, 0), { scale: bigScale, rotate: -9 }),
+    pose(0.64, at(center, step, 0), { scale: bigScale, rotate: 7 }),
+    pose(0.66, at(center, step, 0), { scale: bigScale, rotate: -3, easing: "ease-out" }),
+
+    // si gira a mezz'aria e torna al centro
+    pose(0.7, at(center, step / 2, -hop * 1.3), { scale: bigScale, flip: true, easing: "ease-in" }),
+    pose(0.73, center, { scale: bigScale, flip: true, squash: 0.2, easing: "ease-out" }),
+    pose(0.75, center, { scale: bigScale }),
+
+    // e se ne va piano piano: saltelli sempre piu' piccoli fino all'angolo
+    ...hopsBetween(center, rest, bigScale, 1, { from: 0.75, to: 0.97, count: 4, height: hop * 0.7 }),
+    pose(1, rest, { scale: 1 }),
+  ];
+}
+
+// Una serie di saltelli da `from` a `to`: a ogni balzo sale, ondeggia e
+// atterra schiacciandosi un poco; la scala passa da fromScale a toScale.
+function hopsBetween(start, end, fromScale, toScale, { from, to, count, height }) {
+  const frames = [];
+  const span = (to - from) / count;
+  for (let i = 1; i <= count; i++) {
+    const midT = (i - 0.5) / count;
+    const landT = i / count;
+    const midScale = lerp(fromScale, toScale, midT);
+    const lift = height * (midScale / Math.max(fromScale, toScale));
+    frames.push(
+      pose(from + span * (i - 0.5), at(lerpPoint(start, end, midT), 0, -lift), {
+        scale: midScale,
+        rotate: i % 2 ? -9 : 9,
+        easing: "ease-in",
+      }),
+      pose(from + span * i, lerpPoint(start, end, landT), {
+        scale: lerp(fromScale, toScale, landT),
+        squash: 0.16,
+        easing: "ease-out",
+      })
+    );
+  }
+  return frames;
+}
+
+// squash > 0 schiaccia (piu' largo e basso), < 0 allunga; flip lo specchia.
+function pose(offset, { x, y }, { scale, squash = 0, rotate = 0, flip = false, easing = "ease-in-out" }) {
+  const scaleX = scale * (1 + squash * 0.7) * (flip ? -1 : 1);
+  const scaleY = scale * (1 - squash);
+  return {
+    offset,
+    easing,
+    transform: `translate(${x}px, ${y}px) rotate(${rotate}deg) scale(${scaleX}, ${scaleY})`,
+  };
+}
+
+function at({ x, y }, dx, dy) {
+  return { x: x + dx, y: y + dy };
+}
+
+function lerpPoint(a, b, t) {
+  return { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) };
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
 }
 
 // ---- Layout ----

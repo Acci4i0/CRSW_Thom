@@ -171,7 +171,7 @@ a {
 /* Compare solo se puzzle.js indica un avatar (renderAvatar in script.js).
    E' un piccolo quadrato, uguale in tutti i cruciverba: una foto (la figura
    intera, centrata nel quadrato) oppure un'animazione a sprite sheet come la
-   camminata. E' decorativo: non riceve click.
+   camminata.
 
    L'inserto non e' uno stacco arbitrario: il footer e' largo 98% centrato,
    quindi il suo margine e' esattamente 1vw. Usando lo stesso valore, il bordo
@@ -187,7 +187,30 @@ a {
   z-index: 10; /* sotto .rotate-notice (20) e sotto il preloader (99999) */
   width: var(--avatar-size);
   height: var(--avatar-size);
-  pointer-events: none;
+  /* e' un bottone: toccandolo prende vita (playAvatarShow in script.js) */
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  /* le trasformazioni dello show partono dalla base: gli schiacciamenti
+     sembrano appoggiati a terra */
+  transform-origin: 50% 100%;
+  transition: transform 0.2s ease-in-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.avatar:hover {
+  transform: scale(1.08);
+}
+
+.avatar:focus-visible {
+  outline: 1px solid;
+  outline-offset: 3px;
+}
+
+/* durante lo show passa sopra a tutto il resto della pagina */
+.avatar.is-alive {
+  z-index: 15;
 }
 
 .avatar-image {
