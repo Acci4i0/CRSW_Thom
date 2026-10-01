@@ -30,7 +30,7 @@ const MIN_FOOTER_SCALE = 0.9;
 const AVATAR_CLEARANCE_PX = 12;
 
 // Lo show dell'avatar quando lo si tocca (vedi playAvatarShow).
-const AVATAR_SHOW_MS = 4600;
+const AVATAR_SHOW_MS = 7500; // saltelli lenti, goffi ma non frenetici
 const AVATAR_WIGGLE_MS = 700;
 let avatarShow = null; // l'animazione in corso, se c'e'
 
