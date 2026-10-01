@@ -180,7 +180,7 @@ a {
 
 .avatar {
   --avatar-inset: 1vw;
-  --avatar-size: 36px;
+  --avatar-size: 52px;
   position: fixed;
   top: var(--avatar-inset);
   left: var(--avatar-inset);
@@ -224,7 +224,7 @@ a {
 @media (max-width: 820px) {
   .avatar {
     --avatar-inset: 2.5vw; /* come il footer, che qui passa a width:95% */
-    --avatar-size: 30px;
+    --avatar-size: 42px;
   }
 }
 
