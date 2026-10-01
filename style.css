@@ -162,7 +162,8 @@ a {
 
 /* ---- Avatar in alto a sinistra ---- */
 
-/* Compare solo se puzzle.js elenca degli avatar (renderAvatar in script.js).
+/* Compare solo se puzzle.js indica un avatar (renderAvatar in script.js).
+   E' decorativo: non riceve click, cosi' la griglia resta sempre libera.
 
    L'inserto non e' uno stacco arbitrario: il footer e' largo 98% centrato,
    quindi il suo margine e' esattamente 1vw. Usando lo stesso valore, il bordo
@@ -176,49 +177,19 @@ a {
   top: var(--avatar-inset);
   left: var(--avatar-inset);
   z-index: 10; /* sotto .rotate-notice (20) e sotto il preloader (99999) */
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-  pointer-events: none; /* solo le frecce ricevono click: la griglia resta libera */
+  pointer-events: none;
 }
 
-.avatar-slot {
-  transition: opacity 0.2s ease-in-out; /* come il fade degli indizi */
-}
-
-.avatar-slot.is-changing {
-  opacity: 0;
-}
-
-/* Riquadro fisso: le frecce restano ferme anche se le foto hanno
-   proporzioni diverse. */
+/* Altezza fissa, larghezza secondo le proporzioni della foto (con un tetto,
+   per le foto molto larghe). */
 .avatar-image {
   display: block;
-  width: var(--avatar-size);
   height: var(--avatar-size);
+  width: auto;
+  max-width: calc(var(--avatar-size) * 2);
   object-fit: contain;
-  object-position: center bottom;
+  object-position: left bottom;
   user-select: none;
-}
-
-.avatar-arrows {
-  display: flex;
-  justify-content: space-between;
-}
-
-.avatar-arrows button {
-  pointer-events: auto;
-  font: inherit;
-  font-size: 16px;
-  line-height: 1;
-  color: #000;
-  background: none;
-  border: 0;
-  /* area di tocco piu' grande senza spostare il disegno */
-  padding: 8px;
-  margin: -8px;
-  cursor: pointer;
 }
 
 /* Animazione a sprite sheet (es. la camminata): numero di frame, immagine e
@@ -261,10 +232,6 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .walk {
     animation: none !important; /* l'animazione e' impostata inline da script.js */
-  }
-
-  .avatar-slot {
-    transition: none;
   }
 }
 

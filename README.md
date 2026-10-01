@@ -29,11 +29,11 @@ Add `?dev` to the URL to log the layout checks in the console.
 ```
 index.html             the page
 style.css              every style
-script.js              reveal logic, clue states, reload cycle, avatar picker
-puzzle.js              the only per-person file: clues, answers, contacts, avatars
+script.js              reveal logic, clue states, reload cycle, corner avatar
+puzzle.js              the only per-person file: clues, answers, contacts, avatar
 generator.js           builds the two grid layouts and checks they are valid
 preloader.js           the counting preloader
-assets/avatars/        corner avatars (only when puzzle.js lists some)
+assets/                the corner avatar
 cruciverba.md          the original project spec (Italian)
 tools/design-notes.md  design values read off the original
 ```
@@ -41,9 +41,10 @@ tools/design-notes.md  design values read off the original
 ## Changing the content
 
 Everything that changes from person to person lives in
-[`puzzle.js`](puzzle.js): clues, answers, contacts and the optional corner
-avatars. `generator.js` builds and validates both layouts (portrait and
-landscape) from the answers, so a new word list is enough — the grid follows.
+[`puzzle.js`](puzzle.js) — clues, answers, contacts and the corner avatar —
+plus the avatar image in `assets/`. `generator.js` builds and validates both
+layouts (portrait and landscape) from the answers, so a new word list is
+enough — the grid follows.
 
 Every other file is identical across the series: a fix to the shared code goes
 into every repo.

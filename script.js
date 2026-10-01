@@ -26,11 +26,6 @@ const RELOAD_AFTER_COMPLETION_MS = 30000;
 
 const MIN_FOOTER_SCALE = 0.9;
 
-// Una chiave per sito: tutti i cruciverba della serie stanno sullo stesso
-// dominio (acci4i0.github.io) e quindi condividono lo stesso localStorage.
-const AVATAR_STORAGE_KEY = `crsw-avatar:${location.pathname}`;
-const AVATAR_FADE_MS = 200; // come il fade degli indizi in style.css
-
 const PORTRAIT_BREAKPOINT = window.matchMedia("(max-width: 820px)");
 
 const grid = document.getElementById("grid");
@@ -46,7 +41,7 @@ function main() {
   renderFooter();
   fitFooterText();
   window.addEventListener("resize", fitFooterText);
-  renderAvatar(PUZZLE.avatars || []);
+  if (PUZZLE.avatar) renderAvatar(PUZZLE.avatar);
 
   if (!LAYOUTS.portrait || !LAYOUTS.landscape) {
     reportGenerationFailure();
@@ -176,39 +171,16 @@ function linkItem(href, text, external) {
   return item;
 }
 
-// ---- Avatar in alto a sinistra (facoltativo: PUZZLE.avatars) ----
+// ---- Avatar in alto a sinistra (facoltativo: PUZZLE.avatar) ----
 
-// Ogni voce di PUZZLE.avatars e' il percorso di un'immagine oppure
-// { sprite, frames, frameMs } per un'animazione a sprite sheet. Con piu' di
-// una voce compaiono le frecce; la scelta resta salvata nel browser.
-function renderAvatar(avatars) {
-  if (avatars.length === 0) return;
-
-  const slot = document.createElement("div");
-  slot.className = "avatar-slot";
-  let current = savedAvatarIndex(avatars.length);
-  slot.appendChild(avatarElement(avatars[current]));
-
+// PUZZLE.avatar e' il percorso di un'immagine oppure { sprite, frames,
+// frameMs } per un'animazione a sprite sheet (es. la camminata).
+function renderAvatar(avatar) {
   const container = document.createElement("div");
   container.className = "avatar";
-  container.appendChild(slot);
-
-  if (avatars.length > 1) {
-    container.appendChild(
-      avatarArrows((step) => {
-        current = (current + step + avatars.length) % avatars.length;
-        saveAvatarIndex(current);
-        swapAvatar(slot, avatarElement(avatars[current]));
-      })
-    );
-    preloadImages(avatars.filter((avatar) => typeof avatar === "string"));
-  }
-
+  container.setAttribute("aria-hidden", "true"); // decorativo
+  container.appendChild(typeof avatar === "string" ? avatarImage(avatar) : avatarSprite(avatar));
   document.body.appendChild(container);
-}
-
-function avatarElement(avatar) {
-  return typeof avatar === "string" ? avatarImage(avatar) : avatarSprite(avatar);
 }
 
 function avatarImage(src) {
@@ -229,64 +201,6 @@ function avatarSprite({ sprite, frames, frameMs }) {
   element.style.backgroundImage = `url(${sprite})`;
   element.style.animation = `walk ${frames * frameMs}ms steps(${frames}) infinite`;
   return element;
-}
-
-function avatarArrows(onStep) {
-  const arrows = document.createElement("div");
-  arrows.className = "avatar-arrows";
-  arrows.append(
-    arrowButton("←", "Avatar precedente", () => onStep(-1)),
-    arrowButton("→", "Avatar successivo", () => onStep(1))
-  );
-  return arrows;
-}
-
-function arrowButton(symbol, label, onClick) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.textContent = symbol;
-  button.setAttribute("aria-label", label);
-  button.addEventListener("click", onClick);
-  return button;
-}
-
-// Dissolvenza: l'avatar sfuma, viene sostituito e ricompare.
-let avatarSwapTimer = null;
-
-function swapAvatar(slot, element) {
-  clearTimeout(avatarSwapTimer);
-  slot.classList.add("is-changing");
-  avatarSwapTimer = setTimeout(() => {
-    slot.replaceChildren(element);
-    slot.classList.remove("is-changing");
-  }, AVATAR_FADE_MS);
-}
-
-// Le altre immagini si scaricano dopo il load, cosi' il cambio e' immediato
-// senza rallentare la prima apertura.
-function preloadImages(sources) {
-  window.addEventListener("load", () => {
-    for (const src of sources) new Image().src = src;
-  });
-}
-
-// localStorage puo' mancare (navigazione privata, dati bloccati): in quel
-// caso si parte dal primo avatar e la scelta vale solo per questa visita.
-function savedAvatarIndex(count) {
-  try {
-    const index = Number(localStorage.getItem(AVATAR_STORAGE_KEY));
-    return Number.isInteger(index) && index >= 0 && index < count ? index : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function saveAvatarIndex(index) {
-  try {
-    localStorage.setItem(AVATAR_STORAGE_KEY, String(index));
-  } catch {
-    // Nessuno storage disponibile: niente da salvare.
-  }
 }
 
 // ---- Layout ----
