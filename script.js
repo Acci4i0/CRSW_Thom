@@ -193,15 +193,15 @@ function avatarImage(src) {
   image.src = src;
   image.alt = "";
   image.draggable = false;
-  // Prima del load l'immagine non ha ancora larghezza: si ricontrolla dopo.
-  image.addEventListener("load", keepGridClearOfAvatar);
   return image;
 }
 
 // L'avatar e' fisso in alto a sinistra e la griglia, centrata, occupa piu'
-// spazio possibile: su una finestra bassa e larga finirebbe sotto l'avatar.
-// Solo in quel caso si riserva in alto lo spazio dell'avatar: la griglia
-// scende e si rimpicciolisce quanto basta (--avatar-reserve in style.css).
+// spazio possibile: su una finestra bassa e larga arriverebbe sotto
+// l'avatar. Solo in quel caso si allarga il margine laterale della griglia
+// fino a oltre l'avatar: la griglia si stringe un poco, resta centrata e alla
+// stessa altezza, con l'avatar alla sua sinistra (--avatar-reserve in
+// style.css).
 function keepGridClearOfAvatar() {
   const avatar = document.querySelector(".avatar");
   if (!avatar) return;
@@ -209,7 +209,7 @@ function keepGridClearOfAvatar() {
   area.style.setProperty("--avatar-reserve", "0px");
   const avatarBox = avatar.getBoundingClientRect();
   if (!gridOverlaps(avatarBox)) return;
-  area.style.setProperty("--avatar-reserve", `${avatarBox.bottom + AVATAR_CLEARANCE_PX}px`);
+  area.style.setProperty("--avatar-reserve", `${avatarBox.right + AVATAR_CLEARANCE_PX}px`);
 }
 
 function gridOverlaps(box) {

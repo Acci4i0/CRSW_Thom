@@ -18,20 +18,20 @@ body {
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  /* il padding inferiore riserva lo spazio del footer fisso; quello superiore
-     vale 0 finche' la griglia non finirebbe sotto l'avatar (vedi
-     keepGridClearOfAvatar in script.js) */
-  padding: var(--avatar-reserve, 0px) 4vh 16vh;
+  /* Margine laterale della griglia. Si allarga solo se la griglia finirebbe
+     sotto l'avatar in alto a sinistra (keepGridClearOfAvatar in script.js):
+     la griglia allora si stringe un poco ma resta centrata, alla stessa
+     altezza, con l'avatar alla sua sinistra. */
+  --side-gutter: max(4vh, var(--avatar-reserve, 0px));
+  /* il padding inferiore riserva lo spazio del footer fisso */
+  padding: 0 var(--side-gutter) 16vh;
 }
 
 .grid {
   /* La larghezza detta la dimensione delle celle come nell'originale;
      il limite in altezza evita che la griglia raggiunga INFO/CONTACT
      sulle finestre basse. */
-  --cell-size: min(
-    calc((100vw - 8vh) / var(--cols)),
-    calc((80vh - var(--avatar-reserve, 0px)) / var(--rows))
-  );
+  --cell-size: min(calc((100vw - 2 * var(--side-gutter)) / var(--cols)), calc(80vh / var(--rows)));
   display: grid;
   grid-template-columns: repeat(var(--cols), var(--cell-size));
   grid-template-rows: repeat(var(--rows), var(--cell-size));
@@ -144,14 +144,11 @@ a {
 @media (max-width: 820px) {
   .grid {
     /* gutter laterale come l'originale: la griglia non tocca i bordi schermo */
-    --cell-size: min(
-      calc((100vw - 16vw) / var(--cols)),
-      calc((80vh - var(--avatar-reserve, 0px)) / var(--rows))
-    );
+    --cell-size: min(calc((100vw - 2 * var(--side-gutter)) / var(--cols)), calc(80vh / var(--rows)));
   }
 
   .grid-area {
-    padding: var(--avatar-reserve, 0px) 8vw 16vh;
+    --side-gutter: max(8vw, var(--avatar-reserve, 0px));
   }
 
   .square .content {
@@ -172,7 +169,9 @@ a {
 /* ---- Avatar in alto a sinistra ---- */
 
 /* Compare solo se puzzle.js indica un avatar (renderAvatar in script.js).
-   E' decorativo: non riceve click, cosi' la griglia resta sempre libera.
+   E' un piccolo quadrato, uguale in tutti i cruciverba: una foto (la figura
+   intera, centrata nel quadrato) oppure un'animazione a sprite sheet come la
+   camminata. E' decorativo: non riceve click.
 
    L'inserto non e' uno stacco arbitrario: il footer e' largo 98% centrato,
    quindi il suo margine e' esattamente 1vw. Usando lo stesso valore, il bordo
@@ -181,34 +180,31 @@ a {
 
 .avatar {
   --avatar-inset: 1vw;
-  --avatar-size: 88px;
+  --avatar-size: 36px;
   position: fixed;
   top: var(--avatar-inset);
   left: var(--avatar-inset);
   z-index: 10; /* sotto .rotate-notice (20) e sotto il preloader (99999) */
+  width: var(--avatar-size);
+  height: var(--avatar-size);
   pointer-events: none;
 }
 
-/* Altezza fissa, larghezza secondo le proporzioni della foto (con un tetto,
-   per le foto molto larghe). */
 .avatar-image {
   display: block;
-  height: var(--avatar-size);
-  width: auto;
-  max-width: calc(var(--avatar-size) * 2);
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  object-position: left bottom;
   user-select: none;
 }
 
 /* Animazione a sprite sheet (es. la camminata): numero di frame, immagine e
    durata arrivano da puzzle.js, vedi avatarSprite() in script.js. */
 .walk {
-  --walk-size: 36px;
-  width: var(--walk-size);
-  height: var(--walk-size);
+  width: 100%;
+  height: 100%;
   background-repeat: no-repeat;
-  background-size: calc(var(--walk-size) * var(--walk-frames)) var(--walk-size);
+  background-size: calc(var(--avatar-size) * var(--walk-frames)) var(--avatar-size);
 }
 
 /* Lo spostamento arriva a -N celle, ma steps(N) disegna solo le posizioni da
@@ -220,7 +216,7 @@ a {
     background-position: 0 0;
   }
   to {
-    background-position: calc(var(--walk-size) * var(--walk-frames) * -1) 0;
+    background-position: calc(var(--avatar-size) * var(--walk-frames) * -1) 0;
   }
 }
 
@@ -228,11 +224,7 @@ a {
 @media (max-width: 820px) {
   .avatar {
     --avatar-inset: 2.5vw; /* come il footer, che qui passa a width:95% */
-    --avatar-size: 64px;
-  }
-
-  .walk {
-    --walk-size: 30px;
+    --avatar-size: 30px;
   }
 }
 
