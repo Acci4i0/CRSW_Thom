@@ -8,7 +8,7 @@ reloads after 30 seconds. Vanilla HTML, CSS and JavaScript — no dependencies.
 **Live:** https://acci4i0.github.io/CRSW_Thom/
 
 Part of the CRSW series — one crossword per person, same code:
-[Andrea](https://acci4i0.github.io/crossword/) · [Thomas](https://acci4i0.github.io/CRSW_Thom/) · [Ilaria](https://acci4i0.github.io/CRSW_Ila/) · [Emma](https://acci4i0.github.io/CRSW_Emma/) · [Gianmarco](https://acci4i0.github.io/CRSW_Gian/) · [Costanza](https://acci4i0.github.io/CRSW_Costi/)
+[Andrea](https://acci4i0.github.io/CRSW_Andre/) · [Thomas](https://acci4i0.github.io/CRSW_Thom/) · [Ilaria](https://acci4i0.github.io/CRSW_Ila/) · [Emma](https://acci4i0.github.io/CRSW_Emma/) · [Gianmarco](https://acci4i0.github.io/CRSW_Gian/) · [Costanza](https://acci4i0.github.io/CRSW_Costi/)
 
 > **Rebuild study** of [sa-m.fr](https://sa-m.fr) by Samuel Dumez. Original
 > concept and design © Samuel Dumez; rebuilt for study, with my own content.
